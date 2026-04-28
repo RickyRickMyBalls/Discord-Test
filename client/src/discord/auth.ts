@@ -3,6 +3,7 @@ import { clientEnv } from '../lib/env';
 
 export type AuthenticatedUser = {
   avatar: string | null;
+  discriminator: string;
   globalName: string | null;
   id: string;
   username: string;
@@ -84,6 +85,7 @@ export const authorizeAndAuthenticate = async (
     scopes: auth.scopes.map((scope) => String(scope)),
     user: {
       avatar: auth.user.avatar ?? null,
+      discriminator: auth.user.discriminator,
       globalName: auth.user.global_name ?? null,
       id: auth.user.id,
       username: auth.user.username,

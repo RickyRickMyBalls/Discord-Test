@@ -1,6 +1,7 @@
 import { type DiscordSDK } from '@discord/embedded-app-sdk';
 import { useEffect, useState } from 'react';
 import { authorizeAndAuthenticate, type DiscordAuthSuccess } from './discord/auth';
+import { CurrentUserCard } from './features/profile/CurrentUserCard';
 import {
   type DiscordBootContext,
   setupDiscordSdk,
@@ -225,6 +226,17 @@ function App() {
         </article>
       </section>
 
+      {auth.status === 'authenticated' ? (
+        <CurrentUserCard auth={auth.result} />
+      ) : (
+        <section className="panel current-user-empty">
+          <h2>Current User Card</h2>
+          <p>
+            Authenticate with Discord to render the polished current-user profile card.
+          </p>
+        </section>
+      )}
+
       <section className="panel debug-panel">
         <h2>Debug Details</h2>
         <dl>
@@ -316,6 +328,10 @@ function App() {
             <div>
               <dt>Global Name</dt>
               <dd>{auth.result.user.globalName ?? 'Unavailable'}</dd>
+            </div>
+            <div>
+              <dt>Discriminator</dt>
+              <dd>{auth.result.user.discriminator}</dd>
             </div>
             <div>
               <dt>Avatar Hash</dt>
