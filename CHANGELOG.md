@@ -42,10 +42,11 @@
 ### Added
 
 - Added lightweight HTTP request logging in the Express app to diagnose Discord proxy and URL mapping behavior during auth.
+- Added secret-safe Discord OAuth failure logging so Render logs can show token exchange status, redirect URI, and Discord error details without exposing the client secret.
 
 ### Notes
 
 - Current investigation focus:
-  - Discord auth in the embedded Activity returns HTML instead of JSON for the token exchange path.
-  - We suspect a Discord proxy, URL mapping, or cached routing mismatch.
-  - Request logging was added so the next test can confirm whether `POST /api/token` reaches Render at all.
+  - Discord auth in the embedded Activity now reaches `POST /api/token`, but the backend returns `500`.
+  - Render logs confirmed the request path is correct, so the remaining issue is inside the OAuth token exchange with Discord.
+  - The next test should reveal Discord’s token endpoint error details directly in Render logs.

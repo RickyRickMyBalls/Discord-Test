@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { exchangeDiscordCode } from '../lib/discord.js';
+import { DiscordTokenExchangeError, exchangeDiscordCode } from '../lib/discord.js';
 
 export const authRouter = Router();
 
@@ -21,6 +21,10 @@ authRouter.post('/token', async (request, response) => {
       access_token: token.access_token,
     });
   } catch (error) {
+    if (error instanceof DiscordTokenExchangeError) {
+      console.error('[auth-route] Discord token exchange error details.', error.details);
+    }
+
     response.status(500).json({
       ok: false,
       message: error instanceof Error ? error.message : 'Discord token exchange failed.',

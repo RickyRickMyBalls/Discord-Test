@@ -14,6 +14,22 @@ type DiscordTokenError = {
   message?: string;
 };
 
+type DiscordTokenExchangeFailureDetails = {
+  discordError?: string;
+  discordErrorDescription?: string;
+  responseStatus: number;
+};
+
+export class DiscordTokenExchangeError extends Error {
+  details: DiscordTokenExchangeFailureDetails;
+
+  constructor(message: string, details: DiscordTokenExchangeFailureDetails) {
+    super(message);
+    this.name = 'DiscordTokenExchangeError';
+    this.details = details;
+  }
+}
+
 const ensureConfiguredSecret = () => {
   if (
     serverEnv.discordClientId === 'your_discord_application_id' ||
@@ -42,14 +58,47 @@ export const exchangeDiscordCode = async (code: string): Promise<DiscordTokenSuc
     body,
   });
 
-  const payload = (await response.json()) as DiscordTokenSuccess | DiscordTokenError;
+  const rawPayload = await response.text();
+  let payload: DiscordTokenSuccess | DiscordTokenError | null = null;
 
-  if (!response.ok || !('access_token' in payload)) {
+  try {
+    payload = JSON.parse(rawPayload) as DiscordTokenSuccess | DiscordTokenError;
+  } catch {
+    console.error('[discord-oauth] Token exchange returned a non-JSON payload.', {
+      clientId: serverEnv.discordClientId,
+      redirectUri: serverEnv.discordRedirectUri,
+      responseStatus: response.status,
+      responsePreview: rawPayload.slice(0, 300),
+    });
+
+    throw new DiscordTokenExchangeError('Discord token exchange returned a non-JSON response.', {
+      responseStatus: response.status,
+    });
+  }
+
+  if (!response.ok || !payload || !('access_token' in payload)) {
     const message =
       'error_description' in payload && payload.error_description
         ? payload.error_description
         : 'Discord token exchange failed.';
-    throw new Error(message);
+
+    const details = {
+      discordError: 'error' in payload ? payload.error : undefined,
+      discordErrorDescription:
+        'error_description' in payload ? payload.error_description : undefined,
+      responseStatus: response.status,
+    };
+
+    console.error('[discord-oauth] Token exchange failed.', {
+      clientId: serverEnv.discordClientId,
+      codeLength: code.length,
+      discordError: details.discordError,
+      discordErrorDescription: details.discordErrorDescription,
+      redirectUri: serverEnv.discordRedirectUri,
+      responseStatus: details.responseStatus,
+    });
+
+    throw new DiscordTokenExchangeError(message, details);
   }
 
   return payload;
