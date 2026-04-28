@@ -51,8 +51,9 @@ export const authorizeAndAuthenticate = async (
 ): Promise<DiscordAuthSuccess> => {
   onProgress?.('authorizing');
 
-  // The installed SDK types only allow `prompt: 'none'`, but we want an
-  // explicit consent prompt during testing.
+  // Typical Discord Activity samples use `prompt: 'none'` after consent is
+  // stable. We intentionally keep `consent` during local dev so the auth modal
+  // is easy to test. The installed SDK types currently only allow `'none'`.
   const { code } = await discordSdk.commands.authorize({
     client_id: clientEnv.discordClientId,
     prompt: 'consent' as 'none',

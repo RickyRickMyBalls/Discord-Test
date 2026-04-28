@@ -199,6 +199,64 @@ Done when:
 
 - The current user sees their name and avatar in the Activity
 
+### Phase 3.1: Auto-Start Discord Auth
+
+Goal:
+
+Start Discord authorization automatically when the Activity launches, while keeping the manual button as a fallback.
+
+Deliverables:
+
+- Trigger the existing auth flow once after the Discord SDK is ready
+- Show a clear "connecting/authenticating" state during automatic auth
+- Prevent repeated automatic auth attempts during one page load
+- Keep the `Connect Discord` button available if auto-auth fails or the user cancels
+
+Done when:
+
+- A user can launch the Activity and be prompted to authorize without first clicking a button
+- Successful auto-auth still displays the current user's name and avatar
+- Failed or cancelled auto-auth leaves the user with a manual retry path
+
+### Phase 3.2: Auth Hardening and Activity Cleanup
+
+Goal:
+
+Harden the proven auth flow before adding shared session presence.
+
+Deliverables:
+
+- Prevent duplicate auth attempts while auth is in progress or already complete
+- Add a short retry cooldown after auth failures
+- Keep Discord tokens in memory only
+- Make the debug console collapsible so the main Activity UI has room
+- Align local docs and examples with the working `127.0.0.1:5174` Cloudflare flow
+
+Done when:
+
+- Auto-auth cannot loop or spam token exchange
+- Manual retry still works after failures
+- Successful auth cannot trigger another OAuth request
+- Local setup docs match the current development workflow
+
+### Phase 3.3: Final Pre-Presence Auth Cleanup
+
+Goal:
+
+Close the last small auth and localhost cleanup gaps found in the pre-Phase-4 code review.
+
+Deliverables:
+
+- Add a synchronous in-flight auth lock so rapid clicks cannot enter auth before React state updates
+- Align the local API fallback with the `127.0.0.1:5174` development setup
+- Update the UI phase label to reflect the latest auth-hardening milestone
+
+Done when:
+
+- Auth cannot be double-started even within one render tick
+- Local browser fallback uses `127.0.0.1:3001`
+- The app is ready to move into participant/session work
+
 ### Phase 4: Session Participant List
 
 Goal:
@@ -281,10 +339,13 @@ We should implement phases in this order:
 2. Phase 1
 3. Phase 2
 4. Phase 3
-5. Phase 4
-6. Phase 5
-7. Phase 6
-8. Phase 7
+5. Phase 3.1
+6. Phase 3.2
+7. Phase 3.3
+8. Phase 4
+9. Phase 5
+10. Phase 6
+11. Phase 7
 
 ## Definition of "Small Enough for Codex"
 

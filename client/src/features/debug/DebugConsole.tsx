@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 export type DebugLogEntry = {
   detail?: string;
   id: number;
@@ -11,14 +13,31 @@ type DebugConsoleProps = {
 };
 
 export function DebugConsole({ entries }: DebugConsoleProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   return (
     <section className="panel debug-console">
       <div className="debug-console-header">
         <h2>Debug Console</h2>
-        <span className="debug-console-count">{entries.length} events</span>
+        <div className="debug-console-actions">
+          <span className="debug-console-count">{entries.length} events</span>
+          <button
+            className="secondary-button"
+            onClick={() => {
+              setIsExpanded((currentValue) => !currentValue);
+            }}
+            type="button"
+          >
+            {isExpanded ? 'Hide' : 'Show'}
+          </button>
+        </div>
       </div>
 
-      {entries.length === 0 ? (
+      {!isExpanded ? (
+        <p className="debug-console-summary">
+          Debug events are collapsed so the main Activity UI has more room.
+        </p>
+      ) : entries.length === 0 ? (
         <p>No debug events yet.</p>
       ) : (
         <ol className="debug-console-list">

@@ -50,6 +50,10 @@
 - Pinned Vite local dev to port `5174` with `strictPort` so Cloudflare tunnel commands and Discord URL mappings stay predictable.
 - Pinned Vite local dev to IPv4 `127.0.0.1` so Cloudflare does not bounce between IPv4 and IPv6 localhost behavior on Windows.
 - Added a secret-safe backend startup log for Discord OAuth config so `invalid_client` issues can be diagnosed without printing secrets.
+- Documented Phase 3.1 as the auto-start Discord auth bridge before shared session presence.
+- Implemented Phase 3.1 auto-auth so the Activity starts Discord authorization once after SDK readiness and keeps the manual button as a retry fallback.
+- Implemented Phase 3.2 auth hardening with duplicate-attempt guards, a 5 second failure cooldown, collapsible debug console, safer startup log wording, and updated local tunnel docs.
+- Implemented Phase 3.3 as the final pre-presence cleanup with a synchronous auth in-flight lock and IPv4 local API fallback alignment.
 
 ### Notes
 

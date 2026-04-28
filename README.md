@@ -11,6 +11,9 @@ Current status:
 - Phase 0 complete: client/server scaffold
 - Phase 1 complete: Embedded App SDK boot path and `discordSdk.ready()` UI state
 - Phase 2 complete: Discord `authorize()` -> backend token exchange -> `authenticate()`
+- Phase 3 complete: current-user profile card
+- Phase 3.1 complete: auto-start auth after SDK readiness
+- Phase 3.2 complete: auth spam protection and dev hardening
 
 ## Stack
 
@@ -46,9 +49,9 @@ npm run dev:client
 
 ## Local URLs
 
-- Client: `http://localhost:5173`
-- Server: `http://localhost:3001`
-- Health: `http://localhost:3001/health`
+- Client: `http://127.0.0.1:5174`
+- Server: `http://127.0.0.1:3001`
+- Health: `http://127.0.0.1:3001/health`
 
 ## Discord Activity Test Steps
 
@@ -66,7 +69,7 @@ npm run dev:client
 Example with `cloudflared`:
 
 ```bash
-cloudflared tunnel --url http://localhost:5173
+cloudflared tunnel --url http://127.0.0.1:5174
 ```
 
 6. Copy the generated HTTPS URL.
@@ -80,7 +83,7 @@ cloudflared tunnel --url http://localhost:5173
 
 8. Open Discord and launch the app from the App Launcher.
 9. Confirm the Activity UI shows Discord SDK status as `Ready`.
-10. Click `Connect Discord`.
+10. Confirm the Discord authorization prompt opens automatically.
 11. Approve the authorization prompt if Discord asks for consent.
 12. Confirm the auth panel reaches `Authenticated` and the user identity appears on screen.
 
@@ -95,5 +98,6 @@ This repo currently includes:
 - a frontend health check
 - a real Embedded App SDK boot path
 - a real Discord auth flow using `identify`
+- in-memory auth reuse guards so repeated clicks do not spam OAuth/token exchange
 
 Participant rendering and the synced timer are intentionally not implemented yet.

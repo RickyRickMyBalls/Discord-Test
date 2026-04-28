@@ -1,5 +1,5 @@
 import { type DiscordSDK } from '@discord/embedded-app-sdk';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   authorizeAndAuthenticate,
   DiscordAuthFlowError,
@@ -34,11 +34,33 @@ type AuthState =
   | { status: 'authenticated'; result: DiscordAuthSuccess }
   | { status: 'error'; message: string };
 
+const AUTH_RETRY_COOLDOWN_MS = 5_000;
+
 function App() {
   const [health, setHealth] = useState<HealthState>({ status: 'loading' });
   const [discord, setDiscord] = useState<DiscordState>({ status: 'idle' });
   const [auth, setAuth] = useState<AuthState>({ status: 'idle' });
   const [debugEntries, setDebugEntries] = useState<DebugLogEntry[]>([]);
+  const [authRetryBlockedUntil, setAuthRetryBlockedUntil] = useState(0);
+  const authAttemptInFlightRef = useRef(false);
+  const hasAttemptedAutoAuthRef = useRef(false);
+
+  const isAuthInProgress =
+    auth.status === 'authorizing' ||
+    auth.status === 'exchanging_token' ||
+    auth.status === 'authenticating';
+  const isAuthRetryCoolingDown = authRetryBlockedUntil > Date.now();
+
+  const authButtonLabel =
+    auth.status === 'authenticated'
+      ? 'Connected'
+      : isAuthRetryCoolingDown
+        ? 'Retry Cooling Down...'
+      : auth.status === 'error'
+        ? 'Try Again'
+        : isAuthInProgress
+          ? 'Connecting...'
+          : 'Connect Discord';
 
   const addDebugEntry = (
     level: DebugLogEntry['level'],
@@ -136,11 +158,50 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!isAuthRetryCoolingDown) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setAuthRetryBlockedUntil(0);
+    }, authRetryBlockedUntil - Date.now());
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [authRetryBlockedUntil, isAuthRetryCoolingDown]);
+
   const handleDiscordAuth = async () => {
     if (discord.status !== 'ready') {
       addDebugEntry('error', 'Skipped auth start because Discord SDK is not ready.');
       return;
     }
+
+    if (auth.status === 'authenticated') {
+      addDebugEntry('info', 'Skipped auth start because Discord is already authenticated.');
+      return;
+    }
+
+    if (isAuthInProgress) {
+      addDebugEntry('info', 'Skipped auth start because Discord auth is already in progress.');
+      return;
+    }
+
+    if (authAttemptInFlightRef.current) {
+      addDebugEntry('info', 'Skipped auth start because an auth attempt is already locked.');
+      return;
+    }
+
+    if (isAuthRetryCoolingDown) {
+      addDebugEntry(
+        'info',
+        'Skipped auth retry because the short failure cooldown is still active.',
+      );
+      return;
+    }
+
+    authAttemptInFlightRef.current = true;
 
     try {
       const authPayload = await authorizeAndAuthenticate(discord.sdk, (status) => {
@@ -167,10 +228,17 @@ function App() {
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown auth error.';
+      const blockedUntil = Date.now() + AUTH_RETRY_COOLDOWN_MS;
+
+      setAuthRetryBlockedUntil(blockedUntil);
       setAuth({
         status: 'error',
         message,
       });
+      addDebugEntry(
+        'info',
+        `Auth retry cooldown started for ${AUTH_RETRY_COOLDOWN_MS / 1000} seconds.`,
+      );
       if (error instanceof DiscordAuthFlowError) {
         addDebugEntry(
           'error',
@@ -188,8 +256,28 @@ function App() {
       }
 
       addDebugEntry('error', 'Discord auth failed.', message);
+    } finally {
+      authAttemptInFlightRef.current = false;
     }
   };
+
+  useEffect(() => {
+    if (discord.status !== 'ready') {
+      return;
+    }
+
+    if (auth.status !== 'idle') {
+      return;
+    }
+
+    if (hasAttemptedAutoAuthRef.current) {
+      return;
+    }
+
+    hasAttemptedAutoAuthRef.current = true;
+    addDebugEntry('info', 'Discord auto-auth starting.');
+    void handleDiscordAuth();
+  }, [discord.status, auth.status]);
 
   const isDiscordContextDetected = Boolean(
     discord.status === 'ready'
@@ -202,11 +290,11 @@ function App() {
   return (
     <main className="app-shell">
       <section className="hero-card">
-        <p className="eyebrow">Phase 1 Discord Boot</p>
+        <p className="eyebrow">Phase 3.3 Auth Hardened</p>
         <h1>Discord Test Farding</h1>
         <p className="lede">
           The Activity now boots the Embedded App SDK and can complete Discord
-          authorization with the minimal <code>identify</code> scope.
+          authorization automatically with the minimal <code>identify</code> scope.
         </p>
       </section>
 
@@ -267,7 +355,7 @@ function App() {
           </p>
           <p>
             {auth.status === 'idle'
-              ? 'Ready to start Discord authorization once the SDK is ready.'
+              ? 'Discord authorization will start automatically once the SDK is ready.'
               : null}
             {auth.status === 'authorizing'
               ? 'Waiting for Discord to grant authorization.'
@@ -285,13 +373,18 @@ function App() {
           {auth.status === 'error' ? <p className="error">{auth.message}</p> : null}
           <button
             className="primary-button"
-            disabled={discord.status !== 'ready' || auth.status === 'authorizing' || auth.status === 'exchanging_token' || auth.status === 'authenticating'}
+            disabled={
+              discord.status !== 'ready' ||
+              isAuthInProgress ||
+              auth.status === 'authenticated' ||
+              isAuthRetryCoolingDown
+            }
             onClick={() => {
               void handleDiscordAuth();
             }}
             type="button"
           >
-            Connect Discord
+            {authButtonLabel}
           </button>
         </article>
       </section>
