@@ -1,4 +1,5 @@
 import type { DiscordSDK } from '@discord/embedded-app-sdk';
+import { getApiUrl } from '../lib/api';
 import { clientEnv } from '../lib/env';
 
 export type AuthenticatedUser = {
@@ -43,7 +44,7 @@ export const authorizeAndAuthenticate = async (
 
   onProgress?.('exchanging_token');
 
-  const tokenResponse = await fetch(`${clientEnv.apiBaseUrl}/api/token`, {
+  const tokenResponse = await fetch(getApiUrl('/api/token'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

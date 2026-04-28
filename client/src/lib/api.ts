@@ -9,8 +9,14 @@ export type TokenExchangeResponse = {
   access_token: string;
 };
 
+export const getApiUrl = (path: string) => {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+
+  return `${clientEnv.apiBaseUrl}${normalizedPath}`;
+};
+
 export const getHealth = async (): Promise<HealthResponse> => {
-  const response = await fetch(`${clientEnv.apiBaseUrl}/health`);
+  const response = await fetch(getApiUrl('/health'));
 
   if (!response.ok) {
     throw new Error(`Health check failed with status ${response.status}`);
