@@ -7,3 +7,5 @@ server/dist/
 client/.env
 server/.env
 npm-debug.log*
+cloudflared.log
+tools/

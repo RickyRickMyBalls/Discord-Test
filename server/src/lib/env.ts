@@ -1,6 +1,12 @@
 import dotenv from 'dotenv';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-dotenv.config();
+const currentDirectory = dirname(fileURLToPath(import.meta.url));
+
+dotenv.config({
+  path: resolve(currentDirectory, '../../.env'),
+});
 
 const getRequiredString = (value: string | undefined, fallback?: string) => {
   const resolved = value ?? fallback;

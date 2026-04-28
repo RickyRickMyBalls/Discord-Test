@@ -45,6 +45,11 @@
 - Added secret-safe Discord OAuth failure logging so Render logs can show token exchange status, redirect URI, and Discord error details without exposing the client secret.
 - Added an in-app debug console that records boot, health, and auth events directly in the Activity UI and surfaces safe backend OAuth debug details.
 - Added explicit handling for Discord OAuth token exchange rate limits, including retry timing and safe response previews in the debug data.
+- Added a Vite dev proxy for `/api` and `/health` so a single local Cloudflare tunnel can load the frontend while still reaching the local Express backend.
+- Made server env loading workspace-safe by explicitly reading `server/.env` during local dev while still allowing deployed environment variables to take priority.
+- Pinned Vite local dev to port `5174` with `strictPort` so Cloudflare tunnel commands and Discord URL mappings stay predictable.
+- Pinned Vite local dev to IPv4 `127.0.0.1` so Cloudflare does not bounce between IPv4 and IPv6 localhost behavior on Windows.
+- Added a secret-safe backend startup log for Discord OAuth config so `invalid_client` issues can be diagnosed without printing secrets.
 
 ### Notes
 
