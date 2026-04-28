@@ -54,6 +54,9 @@
 - Implemented Phase 3.1 auto-auth so the Activity starts Discord authorization once after SDK readiness and keeps the manual button as a retry fallback.
 - Implemented Phase 3.2 auth hardening with duplicate-attempt guards, a 5 second failure cooldown, collapsible debug console, safer startup log wording, and updated local tunnel docs.
 - Implemented Phase 3.3 as the final pre-presence cleanup with a synchronous auth in-flight lock and IPv4 local API fallback alignment.
+- Prepared Phase 4 implementation docs for the Discord SDK participant list flow using `getInstanceConnectedParticipants()` and `ACTIVITY_INSTANCE_PARTICIPANTS_UPDATE`.
+- Implemented Phase 4 connected participant rendering using Discord SDK participant load and update events.
+- Hardened Phase 4 participant loading to wait for auth, surface non-Error failures, and fall back to the authenticated current user if Discord participant APIs are unavailable.
 
 ### Notes
 

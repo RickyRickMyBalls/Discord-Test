@@ -5,7 +5,13 @@ import {
   DiscordAuthFlowError,
   type DiscordAuthSuccess,
 } from './discord/auth';
+import {
+  normalizeParticipants,
+  type DiscordSdkParticipant,
+  type NormalizedParticipant,
+} from './discord/participants';
 import { DebugConsole, type DebugLogEntry } from './features/debug/DebugConsole';
+import { ParticipantsList } from './features/participants/ParticipantsList';
 import { CurrentUserCard } from './features/profile/CurrentUserCard';
 import {
   type DiscordBootContext,
@@ -34,12 +40,37 @@ type AuthState =
   | { status: 'authenticated'; result: DiscordAuthSuccess }
   | { status: 'error'; message: string };
 
+type ParticipantsState =
+  | { status: 'idle' | 'loading'; participants: NormalizedParticipant[] }
+  | { status: 'ready'; participants: NormalizedParticipant[] }
+  | { status: 'error'; message: string; participants: NormalizedParticipant[] };
+
 const AUTH_RETRY_COOLDOWN_MS = 5_000;
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof error === 'string') {
+    return error;
+  }
+
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return fallback;
+  }
+};
 
 function App() {
   const [health, setHealth] = useState<HealthState>({ status: 'loading' });
   const [discord, setDiscord] = useState<DiscordState>({ status: 'idle' });
   const [auth, setAuth] = useState<AuthState>({ status: 'idle' });
+  const [participants, setParticipants] = useState<ParticipantsState>({
+    participants: [],
+    status: 'idle',
+  });
   const [debugEntries, setDebugEntries] = useState<DebugLogEntry[]>([]);
   const [authRetryBlockedUntil, setAuthRetryBlockedUntil] = useState(0);
   const authAttemptInFlightRef = useRef(false);
@@ -172,6 +203,97 @@ function App() {
     };
   }, [authRetryBlockedUntil, isAuthRetryCoolingDown]);
 
+  useEffect(() => {
+    if (discord.status !== 'ready' || auth.status !== 'authenticated') {
+      return;
+    }
+
+    let active = true;
+
+    const updateParticipants = (
+      participantPayload: DiscordSdkParticipant[],
+      debugMessage: string,
+    ) => {
+      const normalizedParticipants = normalizeParticipants(participantPayload, auth.result.user);
+
+      setParticipants({
+        participants: normalizedParticipants,
+        status: 'ready',
+      });
+      addDebugEntry(
+        'success',
+        debugMessage,
+        JSON.stringify(
+          {
+            count: normalizedParticipants.length,
+            participants: normalizedParticipants.map((participant) => ({
+              displayName: participant.displayName,
+              id: participant.id,
+              username: participant.username,
+            })),
+          },
+          null,
+          2,
+        ),
+      );
+    };
+
+    const handleParticipantsUpdate = (event: { participants: DiscordSdkParticipant[] }) => {
+      if (!active) {
+        return;
+      }
+
+      updateParticipants(event.participants, 'Connected participants updated.');
+    };
+
+    const loadParticipants = async () => {
+      setParticipants({
+        participants: [],
+        status: 'loading',
+      });
+      addDebugEntry('info', 'Loading connected participants.');
+
+      try {
+        const response = await discord.sdk.commands.getActivityInstanceConnectedParticipants();
+
+        if (!active) {
+          return;
+        }
+
+        updateParticipants(response.participants, 'Connected participants loaded.');
+        await discord.sdk.subscribe(
+          'ACTIVITY_INSTANCE_PARTICIPANTS_UPDATE',
+          handleParticipantsUpdate,
+        );
+      } catch (error) {
+        if (!active) {
+          return;
+        }
+
+        const message = getErrorMessage(error, 'Unknown participant list error.');
+        setParticipants({
+          participants: normalizeParticipants([], auth.result.user),
+          status: 'ready',
+        });
+        addDebugEntry(
+          'error',
+          'Connected participants load failed; showing authenticated user fallback.',
+          message,
+        );
+      }
+    };
+
+    void loadParticipants();
+
+    return () => {
+      active = false;
+      void discord.sdk.unsubscribe(
+        'ACTIVITY_INSTANCE_PARTICIPANTS_UPDATE',
+        handleParticipantsUpdate,
+      );
+    };
+  }, [discord.status, auth.status]);
+
   const handleDiscordAuth = async () => {
     if (discord.status !== 'ready') {
       addDebugEntry('error', 'Skipped auth start because Discord SDK is not ready.');
@@ -290,7 +412,7 @@ function App() {
   return (
     <main className="app-shell">
       <section className="hero-card">
-        <p className="eyebrow">Phase 3.3 Auth Hardened</p>
+        <p className="eyebrow">Phase 4 Participants</p>
         <h1>Discord Test Farding</h1>
         <p className="lede">
           The Activity now boots the Embedded App SDK and can complete Discord
@@ -399,6 +521,13 @@ function App() {
           </p>
         </section>
       )}
+
+      <ParticipantsList
+        currentUserId={auth.status === 'authenticated' ? auth.result.user.id : undefined}
+        errorMessage={participants.status === 'error' ? participants.message : undefined}
+        participants={participants.participants}
+        status={participants.status}
+      />
 
       <section className="panel debug-panel">
         <h2>Debug Details</h2>

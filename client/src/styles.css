@@ -251,7 +251,8 @@ code {
 }
 
 .current-user-card,
-.current-user-empty {
+.current-user-empty,
+.participants-panel {
   margin-top: 20px;
 }
 
@@ -296,6 +297,67 @@ code {
 
 .current-user-summary {
   max-width: 52ch;
+}
+
+.participants-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.participants-header .eyebrow {
+  margin: 0 0 8px;
+}
+
+.participants-list {
+  display: grid;
+  gap: 12px;
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.participant-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid rgba(145, 196, 255, 0.12);
+  border-radius: 18px;
+  background: rgba(145, 196, 255, 0.06);
+}
+
+.participant-avatar {
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
+  border: 1px solid rgba(145, 196, 255, 0.3);
+  border-radius: 18px;
+  object-fit: cover;
+  background: rgba(145, 196, 255, 0.08);
+}
+
+.participant-copy h3,
+.participant-copy p {
+  margin: 0;
+}
+
+.participant-name-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.participant-you {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(112, 221, 167, 0.14);
+  color: #97efbf;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .debug-panel dl {

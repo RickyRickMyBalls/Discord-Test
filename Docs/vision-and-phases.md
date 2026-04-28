@@ -266,7 +266,7 @@ Display all currently connected session participants with names and avatars.
 Deliverables:
 
 - Call `getInstanceConnectedParticipants()`
-- Subscribe to participant update events
+- Subscribe to `ACTIVITY_INSTANCE_PARTICIPANTS_UPDATE`
 - Render the participant list
 - Handle join and leave updates cleanly
 
@@ -274,6 +274,7 @@ Done when:
 
 - Multiple users in one Activity instance can see the same participant list
 - The list updates when someone joins or leaves
+- No WebSocket or synced timer logic has been added yet
 
 ### Phase 5: Shared Session Timer
 
