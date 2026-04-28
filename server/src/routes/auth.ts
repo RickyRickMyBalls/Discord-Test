@@ -23,6 +23,13 @@ authRouter.post('/token', async (request, response) => {
   } catch (error) {
     if (error instanceof DiscordTokenExchangeError) {
       console.error('[auth-route] Discord token exchange error details.', error.details);
+
+      response.status(500).json({
+        debug: error.details,
+        ok: false,
+        message: error.message,
+      });
+      return;
     }
 
     response.status(500).json({

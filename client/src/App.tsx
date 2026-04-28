@@ -1,6 +1,11 @@
 import { type DiscordSDK } from '@discord/embedded-app-sdk';
 import { useEffect, useState } from 'react';
-import { authorizeAndAuthenticate, type DiscordAuthSuccess } from './discord/auth';
+import {
+  authorizeAndAuthenticate,
+  DiscordAuthFlowError,
+  type DiscordAuthSuccess,
+} from './discord/auth';
+import { DebugConsole, type DebugLogEntry } from './features/debug/DebugConsole';
 import { CurrentUserCard } from './features/profile/CurrentUserCard';
 import {
   type DiscordBootContext,
@@ -33,12 +38,31 @@ function App() {
   const [health, setHealth] = useState<HealthState>({ status: 'loading' });
   const [discord, setDiscord] = useState<DiscordState>({ status: 'idle' });
   const [auth, setAuth] = useState<AuthState>({ status: 'idle' });
+  const [debugEntries, setDebugEntries] = useState<DebugLogEntry[]>([]);
+
+  const addDebugEntry = (
+    level: DebugLogEntry['level'],
+    message: string,
+    detail?: string,
+  ) => {
+    setDebugEntries((currentEntries) => [
+      {
+        detail,
+        id: Date.now() + currentEntries.length,
+        level,
+        message,
+        timestamp: new Date().toLocaleTimeString(),
+      },
+      ...currentEntries,
+    ]);
+  };
 
   useEffect(() => {
     let active = true;
 
     const loadHealth = async () => {
       try {
+        addDebugEntry('info', 'Checking backend health endpoint.');
         const response = await getHealth();
 
         if (!active) {
@@ -46,6 +70,7 @@ function App() {
         }
 
         setHealth({ status: 'success', service: response.service });
+        addDebugEntry('success', 'Backend health check succeeded.', response.service);
       } catch (error) {
         if (!active) {
           return;
@@ -54,6 +79,7 @@ function App() {
         const message =
           error instanceof Error ? error.message : 'Unknown health check error';
         setHealth({ status: 'error', message });
+        addDebugEntry('error', 'Backend health check failed.', message);
       }
     };
 
@@ -69,6 +95,7 @@ function App() {
 
     const bootDiscord = async () => {
       setDiscord({ status: 'connecting' });
+      addDebugEntry('info', 'Starting Discord SDK boot.');
 
       const result = await setupDiscordSdk();
 
@@ -82,6 +109,11 @@ function App() {
           context: result.context,
           sdk: result.sdk,
         });
+        addDebugEntry(
+          'success',
+          'Discord SDK ready.',
+          JSON.stringify(result.context, null, 2),
+        );
         return;
       }
 
@@ -90,6 +122,11 @@ function App() {
         message: result.message,
         context: result.context,
       });
+      addDebugEntry(
+        'error',
+        'Discord SDK boot failed.',
+        `${result.message}\n${JSON.stringify(result.context, null, 2)}`,
+      );
     };
 
     void bootDiscord();
@@ -101,23 +138,56 @@ function App() {
 
   const handleDiscordAuth = async () => {
     if (discord.status !== 'ready') {
+      addDebugEntry('error', 'Skipped auth start because Discord SDK is not ready.');
       return;
     }
 
     try {
       const authPayload = await authorizeAndAuthenticate(discord.sdk, (status) => {
         setAuth({ status });
+        addDebugEntry('info', `Discord auth progress: ${status}.`);
       });
 
       setAuth({
         status: 'authenticated',
         result: authPayload,
       });
+      addDebugEntry(
+        'success',
+        'Discord auth completed successfully.',
+        JSON.stringify(
+          {
+            application: authPayload.application.name,
+            scopes: authPayload.scopes,
+            user: authPayload.user,
+          },
+          null,
+          2,
+        ),
+      );
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown auth error.';
       setAuth({
         status: 'error',
-        message: error instanceof Error ? error.message : 'Unknown auth error.',
+        message,
       });
+      if (error instanceof DiscordAuthFlowError) {
+        addDebugEntry(
+          'error',
+          'Discord auth failed.',
+          JSON.stringify(
+            {
+              debug: error.debug,
+              message,
+            },
+            null,
+            2,
+          ),
+        );
+        return;
+      }
+
+      addDebugEntry('error', 'Discord auth failed.', message);
     }
   };
 
@@ -310,6 +380,8 @@ function App() {
           </div>
         </dl>
       </section>
+
+      <DebugConsole entries={debugEntries} />
 
       <section className="panel debug-panel">
         <h2>Authenticated User</h2>

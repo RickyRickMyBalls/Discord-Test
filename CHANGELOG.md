@@ -43,6 +43,7 @@
 
 - Added lightweight HTTP request logging in the Express app to diagnose Discord proxy and URL mapping behavior during auth.
 - Added secret-safe Discord OAuth failure logging so Render logs can show token exchange status, redirect URI, and Discord error details without exposing the client secret.
+- Added an in-app debug console that records boot, health, and auth events directly in the Activity UI and surfaces safe backend OAuth debug details.
 
 ### Notes
 

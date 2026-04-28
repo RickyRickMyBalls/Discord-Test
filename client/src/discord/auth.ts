@@ -23,10 +23,27 @@ export type DiscordAuthSuccess = {
   user: AuthenticatedUser;
 };
 
+export type DiscordAuthDebugDetails = {
+  discordError?: string;
+  discordErrorDescription?: string;
+  rawResponsePreview?: string;
+  responseStatus?: number;
+};
+
 export type DiscordAuthProgress =
   | 'authorizing'
   | 'exchanging_token'
   | 'authenticating';
+
+export class DiscordAuthFlowError extends Error {
+  debug?: DiscordAuthDebugDetails;
+
+  constructor(message: string, debug?: DiscordAuthDebugDetails) {
+    super(message);
+    this.name = 'DiscordAuthFlowError';
+    this.debug = debug;
+  }
+}
 
 export const authorizeAndAuthenticate = async (
   discordSdk: DiscordSDK,
@@ -54,16 +71,34 @@ export const authorizeAndAuthenticate = async (
     body: JSON.stringify({ code }),
   });
 
-  const tokenPayload = (await tokenResponse.json()) as
+  const rawTokenPayload = await tokenResponse.text();
+  let tokenPayload:
     | { access_token: string }
-    | { message?: string; ok?: boolean };
+    | { debug?: DiscordAuthDebugDetails; message?: string; ok?: boolean }
+    | null = null;
 
-  if (!tokenResponse.ok || !('access_token' in tokenPayload)) {
+  try {
+    tokenPayload = JSON.parse(rawTokenPayload) as
+      | { access_token: string }
+      | { debug?: DiscordAuthDebugDetails; message?: string; ok?: boolean };
+  } catch {
+    throw new DiscordAuthFlowError('Token exchange returned a non-JSON response to the client.', {
+      rawResponsePreview: rawTokenPayload.slice(0, 300),
+      responseStatus: tokenResponse.status,
+    });
+  }
+
+  if (!tokenResponse.ok || !tokenPayload || !('access_token' in tokenPayload)) {
     const message =
-      'message' in tokenPayload && tokenPayload.message
+      tokenPayload && 'message' in tokenPayload && tokenPayload.message
         ? tokenPayload.message
         : `Token exchange failed with status ${tokenResponse.status}.`;
-    throw new Error(message);
+    const debug =
+      tokenPayload && 'debug' in tokenPayload ? tokenPayload.debug : undefined;
+    throw new DiscordAuthFlowError(message, {
+      ...debug,
+      responseStatus: debug?.responseStatus ?? tokenResponse.status,
+    });
   }
 
   onProgress?.('authenticating');
