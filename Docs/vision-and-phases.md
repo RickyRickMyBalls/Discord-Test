@@ -276,6 +276,25 @@ Done when:
 - The list updates when someone joins or leaves
 - No WebSocket or synced timer logic has been added yet
 
+### Phase 4.1: Silent Re-Auth and Consent Fallback
+
+Goal:
+
+Avoid showing the Discord consent modal on every launch once a user has already authorized the app.
+
+Deliverables:
+
+- Try `authorize()` with `prompt: 'none'` first
+- Fall back once to `prompt: 'consent'` if silent auth fails
+- Keep access tokens in memory only
+- Keep existing auth spam protection
+
+Done when:
+
+- Returning users can usually authenticate without seeing the consent modal
+- Fresh or revoked users still get a consent prompt fallback
+- Current-user and participant rendering still work after auth
+
 ### Phase 5: Shared Session Timer
 
 Goal:
@@ -294,6 +313,7 @@ Done when:
 
 - Two or more users in the same session see the same timer start point
 - A later joiner sees the existing timer, not a fresh one
+- The timer uses WebSocket-backed server state keyed by Activity `instanceId`
 
 ### Phase 6: Join/Leave Robustness
 
@@ -344,9 +364,10 @@ We should implement phases in this order:
 6. Phase 3.2
 7. Phase 3.3
 8. Phase 4
-9. Phase 5
-10. Phase 6
-11. Phase 7
+9. Phase 4.1
+10. Phase 5
+11. Phase 6
+12. Phase 7
 
 ## Definition of "Small Enough for Codex"
 

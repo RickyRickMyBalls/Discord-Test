@@ -57,6 +57,9 @@
 - Prepared Phase 4 implementation docs for the Discord SDK participant list flow using `getInstanceConnectedParticipants()` and `ACTIVITY_INSTANCE_PARTICIPANTS_UPDATE`.
 - Implemented Phase 4 connected participant rendering using Discord SDK participant load and update events.
 - Hardened Phase 4 participant loading to wait for auth, surface non-Error failures, and fall back to the authenticated current user if Discord participant APIs are unavailable.
+- Prepared Phase 4.1 docs for silent Discord re-auth with consent fallback.
+- Implemented Phase 4.1 silent Discord authorization first, with one consent prompt fallback when silent auth is unavailable.
+- Prepared Phase 5 implementation docs for a WebSocket-backed synced session timer keyed by Discord Activity `instanceId`.
 
 ### Notes
 

@@ -32,6 +32,9 @@ export type DiscordAuthDebugDetails = {
 
 export type DiscordAuthProgress =
   | 'authorizing'
+  | 'authorizing_consent'
+  | 'authorizing_silent'
+  | 'silent_authorization_failed'
   | 'exchanging_token'
   | 'authenticating';
 
@@ -45,22 +48,35 @@ export class DiscordAuthFlowError extends Error {
   }
 }
 
+const authorizeWithPrompt = async (discordSdk: DiscordSDK, prompt: 'consent' | 'none') => {
+  return discordSdk.commands.authorize({
+    client_id: clientEnv.discordClientId,
+    prompt: prompt as 'none',
+    response_type: 'code',
+    scope: ['identify'],
+    state: '',
+  });
+};
+
 export const authorizeAndAuthenticate = async (
   discordSdk: DiscordSDK,
   onProgress?: (status: DiscordAuthProgress) => void,
 ): Promise<DiscordAuthSuccess> => {
   onProgress?.('authorizing');
+  onProgress?.('authorizing_silent');
 
-  // Typical Discord Activity samples use `prompt: 'none'` after consent is
-  // stable. We intentionally keep `consent` during local dev so the auth modal
-  // is easy to test. The installed SDK types currently only allow `'none'`.
-  const { code } = await discordSdk.commands.authorize({
-    client_id: clientEnv.discordClientId,
-    prompt: 'consent' as 'none',
-    response_type: 'code',
-    scope: ['identify'],
-    state: '',
-  });
+  let code: string;
+
+  try {
+    const silentAuthorization = await authorizeWithPrompt(discordSdk, 'none');
+    code = silentAuthorization.code;
+  } catch {
+    onProgress?.('silent_authorization_failed');
+    onProgress?.('authorizing_consent');
+
+    const consentAuthorization = await authorizeWithPrompt(discordSdk, 'consent');
+    code = consentAuthorization.code;
+  }
 
   onProgress?.('exchanging_token');
 

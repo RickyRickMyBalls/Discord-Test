@@ -327,8 +327,25 @@ function App() {
 
     try {
       const authPayload = await authorizeAndAuthenticate(discord.sdk, (status) => {
-        setAuth({ status });
-        addDebugEntry('info', `Discord auth progress: ${status}.`);
+        const authStatus =
+          status === 'authorizing_consent' ||
+          status === 'authorizing_silent' ||
+          status === 'silent_authorization_failed'
+            ? 'authorizing'
+            : status;
+
+        setAuth({ status: authStatus });
+        const authProgressMessages = {
+          authenticating: 'Discord auth progress: authenticating.',
+          authorizing: 'Discord auth progress: authorizing.',
+          authorizing_consent: 'Trying consent Discord authorization.',
+          authorizing_silent: 'Trying silent Discord authorization.',
+          exchanging_token: 'Discord auth progress: exchanging_token.',
+          silent_authorization_failed:
+            'Silent Discord authorization failed; falling back to consent prompt.',
+        } satisfies Record<typeof status, string>;
+
+        addDebugEntry('info', authProgressMessages[status]);
       });
 
       setAuth({
