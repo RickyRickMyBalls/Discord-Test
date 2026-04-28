@@ -1,0 +1,203 @@
+:root {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  color: #f3f7fb;
+  background:
+    radial-gradient(circle at top, rgba(92, 157, 237, 0.2), transparent 40%),
+    linear-gradient(180deg, #09131f 0%, #111f31 100%);
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+code {
+  font-family: "Cascadia Code", Consolas, monospace;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app-shell {
+  width: min(1100px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 48px 0 64px;
+}
+
+.hero-card,
+.panel {
+  background: rgba(8, 18, 31, 0.8);
+  border: 1px solid rgba(170, 203, 255, 0.18);
+  border-radius: 20px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(12px);
+}
+
+.hero-card {
+  padding: 32px;
+  margin-bottom: 20px;
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  color: #91c4ff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.hero-card h1,
+.panel h2 {
+  margin: 0;
+}
+
+.hero-card h1 {
+  font-size: clamp(2.4rem, 5vw, 4rem);
+  line-height: 0.95;
+}
+
+.lede {
+  max-width: 60ch;
+  margin: 16px 0 0;
+  color: #d3e3f7;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+.panel {
+  padding: 24px;
+}
+
+.panel p {
+  margin: 12px 0 0;
+  color: #d5deea;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.status-idle {
+  background: rgba(180, 196, 219, 0.12);
+  color: #d6dfeb;
+}
+
+.status-connecting {
+  background: rgba(255, 203, 107, 0.14);
+  color: #ffd78c;
+}
+
+.status-ready {
+  background: rgba(112, 221, 167, 0.14);
+  color: #97efbf;
+}
+
+.status-error {
+  background: rgba(255, 126, 126, 0.14);
+  color: #ffb6b6;
+}
+
+.status-authorizing,
+.status-exchanging_token,
+.status-authenticating {
+  background: rgba(255, 203, 107, 0.14);
+  color: #ffd78c;
+}
+
+.status-authenticated {
+  background: rgba(112, 221, 167, 0.14);
+  color: #97efbf;
+}
+
+.primary-button {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border: 1px solid rgba(145, 196, 255, 0.35);
+  border-radius: 14px;
+  background: linear-gradient(135deg, #5aa1ff 0%, #86d9ff 100%);
+  color: #06111d;
+  font-weight: 700;
+}
+
+.primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.debug-panel {
+  margin-top: 20px;
+}
+
+.debug-panel dl {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0 0;
+}
+
+.debug-panel div {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(145, 196, 255, 0.07);
+}
+
+.debug-panel dt {
+  color: #91c4ff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.debug-panel dd {
+  margin: 6px 0 0;
+  word-break: break-word;
+}
+
+.error {
+  color: #ffb6b6;
+}
+
+@media (max-width: 640px) {
+  .app-shell {
+    width: min(100% - 24px, 1100px);
+    padding-top: 32px;
+  }
+
+  .hero-card,
+  .panel {
+    padding: 20px;
+  }
+}
