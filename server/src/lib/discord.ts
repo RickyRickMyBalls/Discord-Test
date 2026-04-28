@@ -17,6 +17,8 @@ type DiscordTokenError = {
 type DiscordTokenExchangeFailureDetails = {
   discordError?: string;
   discordErrorDescription?: string;
+  rawResponsePreview?: string;
+  retryAfterSeconds?: string | null;
   responseStatus: number;
 };
 
@@ -53,7 +55,9 @@ export const exchangeDiscordCode = async (code: string): Promise<DiscordTokenSuc
   const response = await fetch('https://discord.com/api/oauth2/token', {
     method: 'POST',
     headers: {
+      Accept: 'application/json',
       'Content-Type': 'application/x-www-form-urlencoded',
+      'User-Agent': `Discord-Test-Farding/0.1 (${serverEnv.clientUrl})`,
     },
     body,
   });
@@ -64,6 +68,29 @@ export const exchangeDiscordCode = async (code: string): Promise<DiscordTokenSuc
   try {
     payload = JSON.parse(rawPayload) as DiscordTokenSuccess | DiscordTokenError;
   } catch {
+    const retryAfterSeconds = response.headers.get('retry-after');
+    const rateLimitRemaining = response.headers.get('x-ratelimit-remaining');
+
+    if (response.status === 429) {
+      console.error('[discord-oauth] Token exchange hit a non-JSON rate limit response.', {
+        clientId: serverEnv.discordClientId,
+        rateLimitRemaining,
+        redirectUri: serverEnv.discordRedirectUri,
+        responseStatus: response.status,
+        responsePreview: rawPayload.slice(0, 300),
+        retryAfterSeconds,
+      });
+
+      throw new DiscordTokenExchangeError(
+        `Discord OAuth is rate limiting the token exchange. Wait ${retryAfterSeconds ?? 'a bit'} and try again.`,
+        {
+          rawResponsePreview: rawPayload.slice(0, 300),
+          responseStatus: response.status,
+          retryAfterSeconds,
+        },
+      );
+    }
+
     console.error('[discord-oauth] Token exchange returned a non-JSON payload.', {
       clientId: serverEnv.discordClientId,
       redirectUri: serverEnv.discordRedirectUri,
@@ -72,6 +99,7 @@ export const exchangeDiscordCode = async (code: string): Promise<DiscordTokenSuc
     });
 
     throw new DiscordTokenExchangeError('Discord token exchange returned a non-JSON response.', {
+      rawResponsePreview: rawPayload.slice(0, 300),
       responseStatus: response.status,
     });
   }
@@ -86,6 +114,8 @@ export const exchangeDiscordCode = async (code: string): Promise<DiscordTokenSuc
       discordError: 'error' in payload ? payload.error : undefined,
       discordErrorDescription:
         'error_description' in payload ? payload.error_description : undefined,
+      rawResponsePreview: rawPayload.slice(0, 300),
+      retryAfterSeconds: response.headers.get('retry-after'),
       responseStatus: response.status,
     };
 
