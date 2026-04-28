@@ -13,6 +13,19 @@ export const createApp = () => {
   const clientDistPath = path.resolve(currentDirPath, '../../client/dist');
   const clientIndexPath = path.join(clientDistPath, 'index.html');
 
+  app.use((request, response, next) => {
+    const startedAt = Date.now();
+
+    response.on('finish', () => {
+      const durationMs = Date.now() - startedAt;
+      console.log(
+        `[http] ${request.method} ${request.originalUrl} -> ${response.statusCode} (${durationMs}ms)`,
+      );
+    });
+
+    next();
+  });
+
   app.use(
     cors({
       origin: serverEnv.clientUrl,
